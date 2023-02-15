@@ -1,4 +1,3 @@
-
 #include "Utils.h"
 #include "MemMap.h"
 #include "StdTypes.h"
@@ -9,383 +8,110 @@
 #include "Stepper.h"
 #include "ADC.h"
 #include "Sensors.h"
- 
+#include "EX_Interrupt.h"
+#include "Timers.h"
+#include "SERVO.h"
+#include "RGB.h"
+#include "Converter.h"
+#include "ULTRASONIC.h"
+#include "UART.h"
 
- /******************** Declrations *********************/
-void DecimalToHex(void);
-void DecimalToBinary(void);
-void CLEAR_Decimal(void);
-void Decimal_Operation(void);
+#define Buzzer_ON DIO_WritePin(PINC5,HIGH)
+#define Buzzer_OFF DIO_WritePin(PINC5,LOW)
 
-void BinaryToHex(void);
-void BinaryToDecimal(void);
-void CLEAR_Binary(void);
-void Binary_Operation(void);
+ void func_OCA(void)
+ {
+	DIO_WritePin(PINC5,LOW);
+ }
+void func_OCB(void)
+{
+DIO_WritePin(PINC5,HIGH);
+}
 
-void HexToBinary(void);
-void HexToDecimal(void);
-void CLEAR_Hex(void);
-void Hex_Operation(void);
- /******************** Globals *********************/
-#define DECIMAL '1'
-#define HEXA '2'
-#define BINARY '3'
-
- u8 k=NO_KEY ,flag=0;
- //u32 num=0;
- u16 num=0;
-  u16 num2=0;
-
- u8 Enter_flag=0;
- 
- u16 temp=0;
 
 int main(void)
 {
-	/*******************************Initilization *******************************/
+    sei(); // enable global interrupt
+/*******************************Initilization *******************************/
 	DIO_Init();
 	LCD_Init();
-	ADC_Init(ADC_VCC,ADC_SCALER_64);
-	/**************************************************************************/
-	/*******************************task LCD *******************************/
-		/*LCD_GoTo(0,0) ;
-		LCD_WriteString("Hello");
-		_delay_ms(700);*/
-/**************************************************************************/
- 
 
-    while(1) 
+	ADC_Init(VREF_VCC,ADC_SCALER_64);
+UART_Init();
+/*********************************** Interrupt*******************************/
+	
+	/*EXI_TriggerEdge(EX_INT1,FALLING_EDGE);
+	EXI_Enable(EX_INT1);*/
+	// EXI_SetCallBack(EX_INT1,functio1);
+/************************ Timer ****************************/
+	/*TIMER0_Init(TIMER0_FASTPWM_MODE,TIMER0_SCALER_8);
+	TIMER0_OC0Mode(OC0_NON_INVERTING);
+	
+	Timer1_Init(TIMER1_FASTPWM_ICR_TOP_MODE,TIMER1_SCALER_8); // fast pwm mode scaler 8
+	Timer1_OCRA1Mode(OCRA_NON_INVERTING);
+	Timer1_OCRB1Mode(OCRA_NON_INVERTING);
+	
+	Timer1_OCB_InterruptEnable();
+	Timer1_OCA_InterruptEnable();
+	Timer1_OCA_SetCallBack(func_OCA);
+	Timer1_OCB_SetCallBack(func_OCB);*/
+/********************************************************/
+Timer1_Init(TIMER1_NORMAL_MODE,TIMER1_SCALER_8);
+ULTRASONIC_Init();
+/*
+ LCD_GoTo_WriteString(0,0,"One-Byte Converter");
+ LCD_GoTo_WriteString(1,0,"DEC   HEX   BIN");
+ _delay_ms(3000);
+ LCD_Clear();*/
+
+u16 d=0 ;
+u32 t=0;
+LCD_GoTo_WriteString(0,0,"UART");
+
+u8 x='A';
+UART_Send('G');
+UART_SendString("Mohamed Ahmed");
+    while(1)
     {
 		
-		
- 		// First Time Display
-		if(Enter_flag==0) 
-		{
-		LCD_GoTo_WriteString(0,0,"Convert From :");
-		LCD_GoTo_WriteString(1,0,"1-D   2-H   3-B");
-		Enter_flag=1;	
-		}
-		
-		// A keypad function to get the key that has been pressed.
-		k = KEYPAD_GetKey(); 
-		if(k!=NO_KEY )
-		{    
-			 // 1 - Decimal Operations 
-			 while(k==DECIMAL) 
-				{	
-					Decimal_Operation();
-				}
-			 // 2 - Hex Operations 
-			 while(k==HEXA)  
-			 {
-				 Hex_Operation();
-			 }
-			 //  3 - Binary Operations 
-			 while(k==BINARY) 
-			 {
-				 Binary_Operation();
-			 }			 
-		}		 		 
-	}
-}
 
-
-
-/******************** Decimal Operation *********************/
-void DecimalToHex(void)
+if(UART_ReceivePerodic(&d))
 {
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"D :                    ");
-	LCD_GoTo_WriteString(1,0,"H :                    ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			num=num*10+(k-'0');
-			if(k=='C')
-			{
-				LCD_Clear();
-				LCD_GoTo_WriteString(0,0,"Convert To :     ");
-				LCD_GoTo_WriteString(1,0,"2-H   3-B             ");
-				num=0;
-				k=NO_KEY;
-				_delay_ms(600);
-				break;
-			}
-		}
-		LCD_GoTo_WriteNumber(0,4,num);
-		LCD_GoTo(1,4) ;
-		LCD_WriteHEX(num);
-	}
+	LCD_GoTo_WriteNumber(1,0,d);	
+}
 	
+	    /*
+	    // First Time Display
+	    if(Enter_flag==0)
+	    {
+		    LCD_GoTo_WriteString(0,0,"Convert From :");
+		    LCD_GoTo_WriteString(1,0,"1-D   2-H   3-B");
+		    Enter_flag=1;
+	    }
+	    
+	    // A keypad function to get the key that has been pressed.
+	    k = KEYPAD_GetKey();
+	    if(k!=(NO_KEY))
+	    {
+		    // 1 - Decimal Operations
+		    while(k==DECIMAL)
+		    {
+			    Decimal_Operation()				;
+		    }
+		    // 2 - Hex Operations
+		    while(k==HEXA)
+		    {
+			    Hex_Operation();
+		    }
+		    //  3 - Binary Operations
+		    while(k==BINARY)
+		    {
+			    Binary_Operation();
+		    }
+	    }*/
+    }
 }
-void DecimalToBinary(void)
-{
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"D :                    ");
-	LCD_GoTo_WriteString(1,0,"B :                    ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			num=num*10+(k-'0');
-			if(k=='C')
-			{
-				LCD_Clear();
-				LCD_GoTo_WriteString(0,0,"Convert To :     ");
-				LCD_GoTo_WriteString(1,0,"2-H   3-B             ");
-				num=0;
-				k=NO_KEY;
-				_delay_ms(600);
-				break;
-			}
-		}
-		LCD_GoTo_WriteNumber(0,4,num);
-		LCD_GoTo(1,4) ;
-		LCD_WriteBinary(num);
-	}
-}
-void CLEAR_Decimal(void)
-{
-	Enter_flag=0;
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"Convert From :");
-	LCD_GoTo_WriteString(1,0,"1-D   2-H   3-B");
-}
-void Decimal_Operation(void)
-{
+ 
+ 
 
-	LCD_GoTo_WriteString(0,0,"Convert To :     ");
-	LCD_GoTo_WriteString(1,0,"2-H   3-B             ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			if(k==HEXA) // if you want to Convert from Deci to Hexa
-			{
-				DecimalToHex();
-				
-			}
-			if(k==BINARY) // Convert from Deci to Binary
-			{
-				DecimalToBinary();
-			}
-			if(k=='C') // reset
-			{
-				CLEAR_Decimal();
-				break;
-			}
-		}
-	}
-}
-/********************                  *********************/
-
-/******************** Binary Operation *********************/
-void BinaryToHex(void)
-{
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"B :                    ");
-	LCD_GoTo_WriteString(1,0,"H :                    ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			if(k=='1')
-			{
-				num=num*10+(k-'0');
-			}
-			if (k=='0')
-			{
-				num=num*10;
-			}
-			if(k=='C')
-			{
-				LCD_Clear();
-				LCD_GoTo_WriteString(0,0,"Convert To :     ");
-				LCD_GoTo_WriteString(1,0,"1-B   2-H             ");
-				num=0;
-				k=NO_KEY;
-				_delay_ms(600);
-				break;
-			}
-		}
-		LCD_GoTo_WriteNumber(0,4,num);
-		LCD_GoTo(1,4) ;
-		LCD_WriteBinaryToHex(num);
-	}
-	
-}
-void BinaryToDecimal(void)
-{
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"B :                    ");
-	LCD_GoTo_WriteString(1,0,"D :                    ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			if(k=='1')
-			{
-				num=num*10+(k-'0');
-			}
-			if (k=='0')
-			{
-				num=num*10;
-			}
-			if(k=='C')
-			{
-				LCD_Clear();
-				LCD_GoTo_WriteString(0,0,"Convert To :     ");
-				LCD_GoTo_WriteString(1,0,"1-D   2-H             ");
-				num=0;
-				k=NO_KEY;
-				_delay_ms(600);
-				break;
-			}
-		}
-		LCD_GoTo_WriteNumber(0,4,num);
-		LCD_GoTo(1,4) ;
-		LCD_WriteBinaryToDecimal(num);
-		
-		
-	}
-}
-void CLEAR_Binary(void)
-{
-	Enter_flag=0;
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"Convert From :");
-	LCD_GoTo_WriteString(1,0,"1-D   2-H   3-B");
-}
-void Binary_Operation(void)
-{
-
-	LCD_GoTo_WriteString(0,0,"Convert To :     ");
-	LCD_GoTo_WriteString(1,0,"1-D   2-H             ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			if(k==DECIMAL) // if you want to Convert from Deci to Hexa
-			{
-				BinaryToDecimal();
-				
-			}
-			if(k==HEXA) // Convert from Deci to Binary
-			{
-				BinaryToHex();
-			}
-			if(k=='C') // reset
-			{
-				CLEAR_Binary();
-				break;
-			}
-		}
-	}
-}
-/********************                  *********************/
-
-/******************** Hexadecimal Operation *********************/
-void HexToBinary(void)
-{
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"H :0x                    ");
-	LCD_GoTo_WriteString(1,0,"B :                    ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			
-			num=num*10+(k-'0');
-			
-			if(k=='C')
-			{
-				LCD_Clear();
-				LCD_GoTo_WriteString(0,0,"Convert To :     ");
-				LCD_GoTo_WriteString(1,0,"1-D   3-B             ");
-				num=0;
-				k=NO_KEY;
-				_delay_ms(600);
-				break;
-			}
-		}
-		
-		LCD_GoTo_WriteNumber(0,6,num);
-		LCD_GoTo(1,4) ;
-		LCD_WriteBinaryToHex(num);
-		
-	}
-	
-}
-void HexToDecimal(void)
-{
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"H :0x                  ");
-	LCD_GoTo_WriteString(1,0,"D :                    ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-				num=num*10+(k-'0');
-
-			if(k=='C')
-			{
-				LCD_Clear();
-				LCD_GoTo_WriteString(0,0,"Convert To :     ");
-				LCD_GoTo_WriteString(1,0,"1-D   3-B             ");
-				num=0;
-				k=NO_KEY;
-				_delay_ms(600);
-				break;
-			}
-		}
-		LCD_GoTo_WriteNumber(0,6,num);
-		LCD_GoTo(1,4) ;
-		LCD_WriteHEXToDecimal(num);
-		
-		
-	}
-}
-void CLEAR_Hex(void)
-{
-	Enter_flag=0;
-	LCD_Clear();
-	LCD_GoTo_WriteString(0,0,"Convert From :");
-	LCD_GoTo_WriteString(1,0,"1-D   2-H   3-B");
-}
-void Hex_Operation(void)
-{
-
-	LCD_GoTo_WriteString(0,0,"Convert To :     ");
-	LCD_GoTo_WriteString(1,0,"1-D   3-B             ");
-	while (1)
-	{
-		k = KEYPAD_GetKey();
-		if(k!=NO_KEY )
-		{
-			if(k==BINARY) // if you want to Convert from Deci to Hexa
-			{
-				HexToBinary();
-				
-			}
-			if(k==DECIMAL) // Convert from Deci to Binary
-			{
-				HexToDecimal();
-			}
-			if(k=='C') // reset
-			{
-				CLEAR_Hex();
-				break;
-			}
-		}
-	}
-}
-/********************                  *********************/
+ 
