@@ -15,6 +15,7 @@
 #include "Converter.h"
 #include "ULTRASONIC.h"
 #include "UART.h"
+#include "UART_Services.h"
 
 #define Buzzer_ON DIO_WritePin(PINC5,HIGH)
 #define Buzzer_OFF DIO_WritePin(PINC5,LOW)
@@ -64,51 +65,47 @@ ULTRASONIC_Init();
  _delay_ms(3000);
  LCD_Clear();*/
 
-u16 d=0 ;
+u8 d0=0 ;
+u8 d1=0 ;
 u32 t=0;
 LCD_GoTo_WriteString(0,0,"UART");
+u8 led1[]={"led on"};
+u8 led0[]={"led off"};
 
-u8 x='A';
-UART_Send('G');
-UART_SendString("Mohamed Ahmed");
+u8 buzz1[]={"buzz on"};
+u8 buzz0[]={"buzz off"};	
+	
+u8 buffer_string[100] ;
+
     while(1)
     {
-		
+ 		UART_ReceiveString(buffer_string);
+ 		 u8 ledon=string_compare_sheet(buffer_string,led1);
+		 u8 ledoff=string_compare_sheet(buffer_string,led0);
+		u8 buzzon=string_compare_sheet(buffer_string,buzz1);
+		u8 buzzpff=string_compare_sheet(buffer_string,buzz0);
 
-if(UART_ReceivePerodic(&d))
-{
-	LCD_GoTo_WriteNumber(1,0,d);	
-}
-	
-	    /*
-	    // First Time Display
-	    if(Enter_flag==0)
-	    {
-		    LCD_GoTo_WriteString(0,0,"Convert From :");
-		    LCD_GoTo_WriteString(1,0,"1-D   2-H   3-B");
-		    Enter_flag=1;
-	    }
-	    
-	    // A keypad function to get the key that has been pressed.
-	    k = KEYPAD_GetKey();
-	    if(k!=(NO_KEY))
-	    {
-		    // 1 - Decimal Operations
-		    while(k==DECIMAL)
-		    {
-			    Decimal_Operation()				;
-		    }
-		    // 2 - Hex Operations
-		    while(k==HEXA)
-		    {
-			    Hex_Operation();
-		    }
-		    //  3 - Binary Operations
-		    while(k==BINARY)
-		    {
-			    Binary_Operation();
-		    }
-	    }*/
+		 if (ledon)
+		 {
+			DIO_WritePin(PINC1,HIGH);
+			LCD_GoTo_WriteString(0,0,buffer_string);
+		 }
+		 if (buzzon)
+		 {
+ 			 Buzzer_ON;
+			  LCD_GoTo_WriteString(1,8,"Buzz on");
+		 }
+		 if (buzzpff)
+		 {
+			 Buzzer_OFF;
+			 LCD_GoTo_WriteString(0,8,"Buzz off");
+		 }
+		 
+ 		  if (ledoff)
+ 		  {
+			DIO_WritePin(PINC1,LOW);
+			LCD_GoTo_WriteString(1,0,buffer_string);
+ 		  }
     }
 }
  
