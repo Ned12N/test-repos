@@ -17,9 +17,7 @@
 #include "UART.h"
 #include "UART_Services.h"
 
-#define Buzzer_ON DIO_WritePin(PINC5,HIGH)
-#define Buzzer_OFF DIO_WritePin(PINC5,LOW)
-
+ 
  void func_OCA(void)
  {
 	DIO_WritePin(PINC5,LOW);
@@ -31,43 +29,59 @@ DIO_WritePin(PINC5,HIGH);
 void fun_ledon(void)
 {
 	DIO_WritePin(PINC0,HIGH);
-	Buzzer_ON;
-
 }
 void fun_ledoff(void)
 {
 	DIO_WritePin(PINC0,LOW);
 }
 u8 buffer_string[100] ;
-u8 led1[]={"led on"};
-u8 led0[]={"led off"};
-
+ 
 typedef struct {
 	u8 *str;
 	void (*pf)(void);
 } Task_type;
 #define ARRAY_SIZE 4
-Task_type arr[ARRAY_SIZE]={{"led on",fun_ledon},
-						   {"led off",fun_ledoff}
-							   
-						  };
+Task_type arr[ARRAY_SIZE]={ {"led on",fun_ledon},
+						    {"led off",fun_ledoff}};
 	
-	/* function that take array of struct and its size .. then compare the UART buffer 
-	   with every string on it then excute its Function */
-	void search_array(Task_type* arr,u8 size,u8* buffer_str)
+/* function that take array of struct and its size .. then compare the UART buffer
+with every string on it then execute its Function */
+void search_array(Task_type* arr,u8 size,u8* buffer_str)
+{
+	u8 i;
+	for (i=0;i < size;i++)
 	{
-		u8 i;
-		for (i=0;i < size;i++)
+		// compare 2 strings together if true activate the function related to that string 
+		if (string_compare_sheet(buffer_str,(arr[i].str))==1)
 		{
-			if (string_compare_sheet(buffer_str,(arr[i].str))==1)
-			{
-				(*(arr+i)).pf();
-				return;
-				//arr[i].pf();
-			}
+			(*(arr+i)).pf();
+			return;
 		}
 	}
-
+}
+u8 index=0;
+void Get_String_USART(void)
+{
+	// Read UDR register and assign the data in Global array as a buffer
+	buffer_string[index]=UDR;
+	// if you press enter end the string 
+	if (buffer_string[index]==0x0D)
+	{
+		buffer_string[index]='\0';
+		index=0;
+	}// this condition for DockLite -- since Enter=0x0D0A 
+	else if (buffer_string[index]==0x0A)
+	{
+        index=0;
+	}
+	else
+	{
+		// increment the index for the new data
+		index++;	
+	}
+	// toggle to make sure data is right
+	DIO_TogglePin(PINC3);
+}
 int main(void)
 {
     sei(); // enable global interrupt
@@ -93,15 +107,24 @@ int main(void)
 	Timer1_OCA_SetCallBack(func_OCA);
 	Timer1_OCB_SetCallBack(func_OCB);*/
 /********************************************************/
-
+UART_SetCallBack(Get_String_USART);
 LCD_GoTo_WriteString(0,0,"UART");
 
-
+u8 timer=0;
     while(1)
     {
- 		UART_ReceiveString(buffer_string);
+ 		//UART_ReceiveString(buffer_string);
+		 LCD_Clear();
 		 search_array(arr,ARRAY_SIZE,buffer_string);		 
 		 LCD_GoTo_WriteString(1,0,buffer_string);
+		 LCD_GoTo_WriteString(1,9,"   ");
+		 LCD_GoTo_WriteNumber(1,9,timer);
+		 timer++;
+		 _delay_ms(250);
+		 if (timer==20)
+		 {
+			 timer=0;
+		 }
     }
 }
  
