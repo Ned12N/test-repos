@@ -16,115 +16,56 @@
 #include "ULTRASONIC.h"
 #include "UART.h"
 #include "UART_Services.h"
-
+#include "PC_Comm_UART.h"
  
- void func_OCA(void)
+ static u8* TX_str;
+ void func_TX(void)
  {
-	DIO_WritePin(PINC5,LOW);
- }
-void func_OCB(void)
-{
-DIO_WritePin(PINC5,HIGH);
-}
-void fun_ledon(void)
-{
-	DIO_WritePin(PINC0,HIGH);
-}
-void fun_ledoff(void)
-{
-	DIO_WritePin(PINC0,LOW);
-}
-u8 buffer_string[100] ;
- 
-typedef struct {
-	u8 *str;
-	void (*pf)(void);
-} Task_type;
-#define ARRAY_SIZE 4
-Task_type arr[ARRAY_SIZE]={ {"led on",fun_ledon},
-						    {"led off",fun_ledoff}};
-	
-/* function that take array of struct and its size .. then compare the UART buffer
-with every string on it then execute its Function */
-void search_array(Task_type* arr,u8 size,u8* buffer_str)
-{
-	u8 i;
-	for (i=0;i < size;i++)
-	{
-		// compare 2 strings together if true activate the function related to that string 
-		if (string_compare_sheet(buffer_str,(arr[i].str))==1)
+		// send the second chararcter in array 
+		static u8 TX_index=1;
+		// Check for NULL to end the array 
+		if(TX_str[TX_index]!='\0')
 		{
-			(*(arr+i)).pf();
-			return;
+			UART_SendNoBlock(TX_str[TX_index]);
+			TX_index++;	
 		}
-	}
-}
-u8 index=0;
-void Get_String_USART(void)
-{
-	// Read UDR register and assign the data in Global array as a buffer
-	buffer_string[index]=UDR;
-	// if you press enter end the string 
-	if (buffer_string[index]==0x0D)
-	{
-		buffer_string[index]='\0';
-		index=0;
-	}// this condition for DockLite -- since Enter=0x0D0A 
-	else if (buffer_string[index]==0x0A)
-	{
-        index=0;
-	}
-	else
-	{
-		// increment the index for the new data
-		index++;	
-	}
-	// toggle to make sure data is right
-	DIO_TogglePin(PINC3);
-}
+ }
+void func_RX(void)
+	{ 
+ 	}
+
+
+
 int main(void)
 {
-    sei(); // enable global interrupt
+   
 /*******************************Initilization *******************************/
 	DIO_Init();
 	LCD_Init();
 	ADC_Init(VREF_VCC,ADC_SCALER_64);
     UART_Init();
-/*********************************** Interrupt*******************************/
-	/*EXI_TriggerEdge(EX_INT1,FALLING_EDGE);
-	EXI_Enable(EX_INT1);*/
-	// EXI_SetCallBack(EX_INT1,functio1);
-/************************ Timer ****************************/
-	/*TIMER0_Init(TIMER0_FASTPWM_MODE,TIMER0_SCALER_8);
-	TIMER0_OC0Mode(OC0_NON_INVERTING);
-	
-	Timer1_Init(TIMER1_FASTPWM_ICR_TOP_MODE,TIMER1_SCALER_8); // fast pwm mode scaler 8
-	Timer1_OCRA1Mode(OCRA_NON_INVERTING);
-	Timer1_OCRB1Mode(OCRA_NON_INVERTING);
-	
-	Timer1_OCB_InterruptEnable();
-	Timer1_OCA_InterruptEnable();
-	Timer1_OCA_SetCallBack(func_OCA);
-	Timer1_OCB_SetCallBack(func_OCB);*/
-/********************************************************/
-UART_SetCallBack(Get_String_USART);
-LCD_GoTo_WriteString(0,0,"UART");
+/****************************************************************************/
+UART_TX_SetCallBack(func_TX);
+UART_RX_SetCallBack(func_RX);
 
+UART_TX_InterruptEnable();
+UART_RX_InterruptEnable();
+
+LCD_GoTo_WriteString(0,0,"TX");
+
+ sei(); // enable global interrupt
+ 
 u8 timer=0;
+u8 str[20];
+u8 str2[20]="Nour Ashraf";
+UART_SendNoBlock(str2[0]);
+TX_str=str2;
     while(1)
     {
- 		//UART_ReceiveString(buffer_string);
-		 LCD_Clear();
-		 search_array(arr,ARRAY_SIZE,buffer_string);		 
-		 LCD_GoTo_WriteString(1,0,buffer_string);
-		 LCD_GoTo_WriteString(1,9,"   ");
-		 LCD_GoTo_WriteNumber(1,9,timer);
+		// just timer to check the code
+		 LCD_GoTo_WriteNumber(1,10,timer);
 		 timer++;
-		 _delay_ms(250);
-		 if (timer==20)
-		 {
-			 timer=0;
-		 }
+		 _delay_ms(200);
     }
 }
  
