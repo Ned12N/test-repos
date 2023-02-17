@@ -19,16 +19,11 @@
 #include "PC_Comm_UART.h"
  
  static u8* TX_str;
+ static volatile flag=1;
+ 
  void func_TX(void)
  {
-		// send the second chararcter in array 
-		static u8 TX_index=1;
-		// Check for NULL to end the array 
-		if(TX_str[TX_index]!='\0')
-		{
-			UART_SendNoBlock(TX_str[TX_index]);
-			TX_index++;	
-		}
+		flag=1;
  }
 void func_RX(void)
 	{ 
@@ -58,10 +53,19 @@ LCD_GoTo_WriteString(0,0,"TX");
 u8 timer=0;
 u8 str[20];
 u8 str2[20]="Nour Ashraf";
-UART_SendNoBlock(str2[0]);
-TX_str=str2;
+u8 TX_index=0;
     while(1)
     {
+		if(flag==1)
+		{
+			// Check for NULL to end the array
+			if(str2[TX_index]!='\0')
+			{
+				UART_SendNoBlock(str2[TX_index]);
+				TX_index++;
+			}
+			flag=0;
+		}
 		// just timer to check the code
 		 LCD_GoTo_WriteNumber(1,10,timer);
 		 timer++;
