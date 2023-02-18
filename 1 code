@@ -17,59 +17,29 @@
 #include "UART.h"
 #include "UART_Services.h"
 #include "PC_Comm_UART.h"
- 
- static u8* TX_str;
- static volatile flag=1;
- 
- void func_TX(void)
- {
-		flag=1;
- }
-void func_RX(void)
-	{ 
- 	}
+#include "UART_STACK.h" 
 
 
+ 
 
 int main(void)
 {
-   
+   sei(); // enable global interrupt
+
 /*******************************Initilization *******************************/
 	DIO_Init();
 	LCD_Init();
-	ADC_Init(VREF_VCC,ADC_SCALER_64);
     UART_Init();
+	UART_StackInit();
 /****************************************************************************/
-UART_TX_SetCallBack(func_TX);
-UART_RX_SetCallBack(func_RX);
-
-UART_TX_InterruptEnable();
-UART_RX_InterruptEnable();
-
-LCD_GoTo_WriteString(0,0,"TX");
-
- sei(); // enable global interrupt
- 
 u8 timer=0;
-u8 str[20];
-u8 str2[20]="Nour Ashraf";
-u8 TX_index=0;
-    while(1)
+     while(1)
     {
-		if(flag==1)
-		{
-			// Check for NULL to end the array
-			if(str2[TX_index]!='\0')
-			{
-				UART_SendNoBlock(str2[TX_index]);
-				TX_index++;
-			}
-			flag=0;
-		}
 		// just timer to check the code
-		 LCD_GoTo_WriteNumber(1,10,timer);
+		LCD_GoTo_WriteString(0,0,"Stack");
+		 LCD_GoTo_WriteNumber(1,13,timer);
 		 timer++;
-		 _delay_ms(200);
+		 _delay_ms(400);
     }
 }
  
