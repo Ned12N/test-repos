@@ -31,31 +31,21 @@ int main(void)
     SPI_Init();
 /****************************************************************************/
 u8 timer=0;			// Timer 
-u8 data='a';		// Data to Master 
-u8 Received_data;	// Data From Master 
+u8 data='1';		// Data to Master 
+u8 Received_data;	// Data From Master
 u8 index=0;			// LCD Index
-LCD_GoTo_WriteString(0,0,"Slave");
+LCD_GoTo_WriteString(0,0,"Master");
 LCD_GoTo(1,0);
-SPI_SendNoBlock(data);
-data++;
      while(1)
     {
-		// check the Interrupt Flag (complete flag) 
-		if (SPI_ReceivePeriodic(&Received_data))
-		{
-			// if master sent data then Send him this data
-			SPI_SendNoBlock(data);
-			// display the data from the master
-			LCD_GoTo_WriteChar(1,index,Received_data);
-			data++;
-			index++;
-		}
-		
-		
+		Received_data=SPI_SendReceive(data);
+		LCD_GoTo_WriteChar(1,index,Received_data);
+		data++;
+		index++;
 		// just timer to check the code
 		 LCD_GoTo_WriteNumber(1,13,timer);
 		 timer++;
-		 _delay_ms(400);
+		 _delay_ms(4000);
     }
 }
  
