@@ -20,7 +20,11 @@
 #include "UART_STACK.h" 
 #include "SPI.h"
  
+// array to store the received data from the Master device
+volatile u8 Received_data[20];	
 
+volatile u8 data_MSTR='a';		// data that will be sent to the Master device
+volatile u8 Receive_index=0;   // variable to store the index of the global buffer
 int main(void)
 {
    sei(); // enable global interrupt
@@ -29,26 +33,57 @@ int main(void)
 	DIO_Init();
 	LCD_Init();
     SPI_Init();
+	SPI_InterruptEnable();
 /****************************************************************************/
 u8 timer=0;			// Timer 
-u8 data='1';		// Data to Master 
-u8 Received_data;	// Data From Master
 u8 index=0;			// LCD Index
-LCD_GoTo_WriteString(0,0,"Master");
-LCD_GoTo(1,0);
+
+LCD_GoTo_WriteString(0,0,"Slave");
+
+// Send the first data byte to the Master device.
+SPI_SendNoBlock(data_MSTR);
+
+// Increment the data byte that will be sent to the Master device.
+data_MSTR++;
+
      while(1)
     {
-		Received_data=SPI_SendReceive(data);
-		LCD_GoTo_WriteChar(1,index,Received_data);
-		data++;
-		index++;
+		 // Check if there is data in the global buffer that has not been processed yet.
+		 if (Receive_index > 0)
+		 {
+			 // Display the data from the global buffer on the second row of the LCD display.
+			 LCD_GoTo_WriteString(1, 0, Received_data);
+
+			 // Increment the data byte that will be sent to the Master device.
+			 data_MSTR++;
+
+			 // Increment the index for the LCD display.
+			 index++;
+
+			 // Decrement the index of the global buffer.
+			 Receive_index--;
+		 }
+		
+		
 		// just timer to check the code
 		 LCD_GoTo_WriteNumber(1,13,timer);
 		 timer++;
-		 _delay_ms(4000);
+		 _delay_ms(2000);
     }
 }
  
- 
+ // Interrupt service routine for the SPI communication.
+ ISR(SPI_vect)
+ {
+	 // Take the data byte from the Master device and put it in the buffer (global array).
+	 static u8 i = 0;
+	 Received_data[i] = SPDR;
+	 i++;
 
+	 // Send the next data byte to the Master device to prevent it from receiving garbage values.
+	 SPI_SendNoBlock(data_MSTR);
+
+	 // Increment the index of the global buffer.
+	 Receive_index++;
+ }
  
